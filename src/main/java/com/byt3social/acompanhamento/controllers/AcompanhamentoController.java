@@ -7,7 +7,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.net.URI;
 import java.util.List;
 
 @RestController
@@ -48,5 +50,26 @@ public class AcompanhamentoController {
         acompanhamentoService.excluirAcompanhamento(acompanhamentoID);
 
         return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    @PostMapping("/acompanhamentos/{id}/arquivos")
+    public ResponseEntity salvarArquivoAcompanhamento(@PathVariable("id") Integer acompanhamentoID, @RequestBody MultipartFile arquivo) {
+        acompanhamentoService.salvarArquivoAcompanhamento(acompanhamentoID, arquivo);
+
+        return new ResponseEntity(HttpStatus.OK);
+    }
+
+    @GetMapping("/acompanhamentos/arquivos/{id}")
+    public ResponseEntity recuperarArquivoAcompanhamento(@PathVariable("id") Integer arquivoID) {
+        String urlArquivo = acompanhamentoService.recuperarArquivoAcompanhamento(arquivoID);
+
+        return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(urlArquivo)).build();
+    }
+
+    @DeleteMapping("/acompanhamentos/arquivos/{id}")
+    public ResponseEntity excluirArquivoAcompanhamento(@PathVariable("id") Integer arquivoID) {
+        acompanhamentoService.excluirArquivoAcompanhamento(arquivoID);
+
+        return new ResponseEntity(HttpStatus.OK);
     }
 }

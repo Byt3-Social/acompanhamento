@@ -2,15 +2,19 @@ package com.byt3social.acompanhamento.services;
 
 import com.byt3social.acompanhamento.dto.AcompanhamentoDTO;
 import com.byt3social.acompanhamento.models.Acompanhamento;
+import com.byt3social.acompanhamento.models.Arquivo;
 import com.byt3social.acompanhamento.models.Indicador;
 import com.byt3social.acompanhamento.models.IndicadorSolicitado;
 import com.byt3social.acompanhamento.repositories.AcompanhamentoRepository;
+import com.byt3social.acompanhamento.repositories.ArquivoRepository;
 import com.byt3social.acompanhamento.repositories.IndicadorRepository;
 import com.byt3social.acompanhamento.repositories.IndicadorSolicitadoRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
@@ -23,6 +27,10 @@ public class AcompanhamentoService {
     private IndicadorRepository indicadorRepository;
     @Autowired
     private IndicadorSolicitadoRepository indicadorSolicitadoRepository;
+    @Autowired
+    private AmazonS3Service amazonS3Service;
+    @Autowired
+    private ArquivoRepository arquivoRepository;
 
     public List<Acompanhamento> consultarAcompanhamentos() {
         return acompanhamentoRepository.findAll();
@@ -84,5 +92,37 @@ public class AcompanhamentoService {
 
     public void excluirAcompanhamento(Integer acompanhamentoID) {
         acompanhamentoRepository.deleteById(acompanhamentoID);
+    }
+
+    @Transactional
+    public void salvarArquivoAcompanhamento(Integer acompanhamentoID, MultipartFile arquivo) {
+        Acompanhamento acompanhamento = acompanhamentoRepository.findById(acompanhamentoID).get();
+        String nomeArquivo = arquivo.getOriginalFilename();
+        Long tamanhoArquivo = arquivo.getSize();
+        String pastaArquivo = "acompanhamentos/" + acompanhamento.getId() + "/arquivos/";
+        String caminhoArquivo = pastaArquivo + Instant.now().toEpochMilli() + "_" + nomeArquivo;
+
+        if(!amazonS3Service.existeObjeto(pastaArquivo)) {
+            amazonS3Service.criarPasta(pastaArquivo);
+        }
+
+        amazonS3Service.armazenarArquivo(arquivo, caminhoArquivo);
+
+        Arquivo novoArquivo = new Arquivo(caminhoArquivo, nomeArquivo, tamanhoArquivo, acompanhamento);
+        arquivoRepository.save(novoArquivo);
+    }
+
+    public String recuperarArquivoAcompanhamento(Integer arquivoID) {
+        Arquivo arquivo = arquivoRepository.findById(arquivoID).get();
+        String caminhoArquivo = arquivo.getCaminhoS3();
+
+        return amazonS3Service.recuperarArquivo(caminhoArquivo);
+    }
+
+    @Transactional
+    public void excluirArquivoAcompanhamento(Integer arquivoID) {
+        Arquivo arquivo = arquivoRepository.findById(arquivoID).get();
+        amazonS3Service.excluirArquivo(arquivo.getCaminhoS3());
+        arquivoRepository.deleteById(arquivoID);
     }
 }
