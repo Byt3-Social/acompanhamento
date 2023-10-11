@@ -1,0 +1,4 @@
+ALTER TABLE reunioes ADD COLUMN status VARCHAR(255) NULL;
+
+ALTER TABLE reunioes ADD COLUMN horario_id INT UNSIGNED NULL,
+    ADD FOREIGN KEY(horario_id) REFERENCES horarios(id);
