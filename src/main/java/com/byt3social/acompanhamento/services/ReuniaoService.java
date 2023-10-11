@@ -2,6 +2,7 @@ package com.byt3social.acompanhamento.services;
 
 import com.byt3social.acompanhamento.dto.AccessTokenDTO;
 import com.byt3social.acompanhamento.dto.OnlineMeetingDTO;
+import com.byt3social.acompanhamento.dto.OrganizacaoDTO;
 import com.byt3social.acompanhamento.dto.ReuniaoDTO;
 import com.byt3social.acompanhamento.models.Acompanhamento;
 import com.byt3social.acompanhamento.models.Horario;
@@ -36,12 +37,16 @@ public class ReuniaoService {
     private String scope;
     @Value("${authentication.microsoft.entra-id.app.user-id}")
     private String userId;
+    @Value("${com.byt3social.app.prospeccao.buscar-organizacao-url}")
+    private String buscarOrganizacaoUrl;
     @Autowired
     private ReuniaoRepository reuniaoRepository;
     @Autowired
     private AcompanhamentoRepository acompanhamentoRepository;
     @Autowired
     private HorarioRepository horarioRepository;
+    @Autowired
+    private EmailService emailService;
 
     public List<Reuniao> consultarReunioes() {
         return reuniaoRepository.findAll();
@@ -89,6 +94,10 @@ public class ReuniaoService {
 
         Reuniao reuniao = new Reuniao(reuniaoDTO, acompanhamento, onlineMeetingDTO);
         reuniaoRepository.save(reuniao);
+
+        OrganizacaoDTO organizacaoDTO = buscarOrganizacao(reuniao);
+
+        emailService.notificarReuniaoSolicitada(organizacaoDTO);
     }
 
     @Transactional
@@ -98,5 +107,15 @@ public class ReuniaoService {
 
         reuniao.agendarHorario(horario);
         horario.agendar(reuniao);
+
+        OrganizacaoDTO organizacaoDTO = buscarOrganizacao(reuniao);
+
+        emailService.notificarReuniaoAgendada(reuniao, organizacaoDTO);
+    }
+
+    private OrganizacaoDTO buscarOrganizacao(Reuniao reuniao) {
+        RestTemplate restTemplateOrganizacao = new RestTemplate();
+
+        return restTemplateOrganizacao.getForObject(buscarOrganizacaoUrl + reuniao.getOrganizacaoId(), OrganizacaoDTO.class);
     }
 }
