@@ -13,17 +13,17 @@ import com.byt3social.acompanhamento.repositories.ReuniaoRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class ReuniaoService {
@@ -57,7 +57,7 @@ public class ReuniaoService {
     }
 
     @Transactional
-    public void solicitarReuniao(ReuniaoDTO reuniaoDTO) {
+    public void solicitarReuniao(ReuniaoDTO reuniaoDTO, String tokenOrganizacao) {
         RestTemplate restTemplateToken = new RestTemplate();
 
         HttpHeaders headers = new HttpHeaders();
@@ -86,36 +86,57 @@ public class ReuniaoService {
 
         OnlineMeetingDTO onlineMeetingDTO = restTemplateMeeting.postForObject("https://graph.microsoft.com/v1.0/users/" + userId + "/onlineMeetings", entityMeeting, OnlineMeetingDTO.class);
 
-        Acompanhamento acompanhamento = null;
+        Acompanhamento acompanhamento = acompanhamentoRepository.findById(reuniaoDTO.acompanhamentoId()).get();
 
-        if(reuniaoDTO.acompanhamento_id() != null) {
-            acompanhamento = acompanhamentoRepository.findById(reuniaoDTO.acompanhamento_id()).get();
-        }
-
-        Reuniao reuniao = new Reuniao(reuniaoDTO, acompanhamento, onlineMeetingDTO);
+        Reuniao reuniao = new Reuniao(acompanhamento, onlineMeetingDTO);
         reuniaoRepository.save(reuniao);
 
-        OrganizacaoDTO organizacaoDTO = buscarOrganizacao(reuniao);
+        List<Horario> horarios = new ArrayList<>();
+
+        for(Date disponibilidade : reuniaoDTO.disponibilidades()) {
+            Horario horario = new Horario(disponibilidade, reuniao);
+            horarios.add(horario);
+        }
+
+        horarioRepository.saveAll(horarios);
+
+        OrganizacaoDTO organizacaoDTO = buscarOrganizacao(reuniao, tokenOrganizacao, "colaborador");
 
         emailService.notificarReuniaoSolicitada(organizacaoDTO);
     }
 
     @Transactional
-    public void agendarHorario(Integer reuniaoID, Integer horarioID) {
+    public void agendarHorario(Integer reuniaoID, Integer horarioID, String tokenOrganizacao) {
         Horario horario = horarioRepository.findById(horarioID).get();
         Reuniao reuniao = reuniaoRepository.findById(reuniaoID).get();
 
-        reuniao.agendarHorario(horario);
+        for (Horario horarioDisponibilizado : reuniao.getHorarios()) {
+            horarioDisponibilizado.desmarcar();
+        }
+
+        reuniao.agendarHorario();
         horario.agendar(reuniao);
 
-        OrganizacaoDTO organizacaoDTO = buscarOrganizacao(reuniao);
+        OrganizacaoDTO organizacaoDTO = buscarOrganizacao(reuniao, tokenOrganizacao, "organizacao");
 
         emailService.notificarReuniaoAgendada(reuniao, organizacaoDTO);
     }
 
-    private OrganizacaoDTO buscarOrganizacao(Reuniao reuniao) {
+    private OrganizacaoDTO buscarOrganizacao(Reuniao reuniao, String tokenOrganizacao, String scope) {
         RestTemplate restTemplateOrganizacao = new RestTemplate();
 
-        return restTemplateOrganizacao.getForObject(buscarOrganizacaoUrl + reuniao.getOrganizacaoId(), OrganizacaoDTO.class);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(tokenOrganizacao.replace("Bearer ", ""));
+        headers.set("B3Social-User", scope);
+
+        HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
+
+        return (restTemplateOrganizacao.exchange(buscarOrganizacaoUrl + reuniao.getAcompanhamento().getOrganizacaoId(), HttpMethod.GET, requestEntity, OrganizacaoDTO.class)).getBody();
+    }
+
+    public List<Reuniao> consultarReunioes(Integer organizacaoId) {
+        List<Reuniao> reuniaos = reuniaoRepository.findByOrganizacaoId(organizacaoId, Sort.by(Sort.Direction.DESC, "status"));
+
+        return reuniaos;
     }
 }

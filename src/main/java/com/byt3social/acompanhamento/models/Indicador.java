@@ -4,10 +4,7 @@ import com.byt3social.acompanhamento.dto.IndicadorDTO;
 import com.byt3social.acompanhamento.enums.TipoIndicador;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.List;
 
@@ -15,6 +12,7 @@ import java.util.List;
 @Entity(name = "Indicador")
 @EqualsAndHashCode(of = "id")
 @NoArgsConstructor
+@AllArgsConstructor
 @Getter
 @Setter
 public class Indicador {
@@ -40,9 +38,7 @@ public class Indicador {
             this.tipo = indicadorDTO.tipo();
         }
 
-        if(indicadorDTO.descricao() != null) {
-            this.descricao = indicadorDTO.descricao();
-        }
+        this.descricao = indicadorDTO.descricao();
 
         if(indicadorDTO.nome() != null) {
             this.nome = indicadorDTO.nome();

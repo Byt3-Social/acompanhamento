@@ -23,6 +23,13 @@ public class ReuniaoController {
         return new ResponseEntity<>(reuniaos, HttpStatus.OK);
     }
 
+    @GetMapping("/reunioes/organizacoes")
+    public ResponseEntity consultarReunioesOrganizacao(@RequestHeader("B3Social-Organizacao") String organizacaoId) {
+        List<Reuniao> reuniaos = reuniaoService.consultarReunioes(Integer.valueOf(organizacaoId));
+
+        return new ResponseEntity<>(reuniaos, HttpStatus.OK);
+    }
+
     @GetMapping("/reunioes/{id}")
     public ResponseEntity consultarReuniao(@PathVariable("id") Integer reuniaoID) {
         Reuniao reuniao = reuniaoService.consultarReuniao(reuniaoID);
@@ -31,16 +38,16 @@ public class ReuniaoController {
     }
 
     @PostMapping("/reunioes")
-    public ResponseEntity solicitarReuniao(@RequestBody ReuniaoDTO reuniaoDTO) {
-        reuniaoService.solicitarReuniao(reuniaoDTO);
+    public ResponseEntity solicitarReuniao(@RequestHeader("Authorization") String token, @RequestBody ReuniaoDTO reuniaoDTO) {
+        reuniaoService.solicitarReuniao(reuniaoDTO, token);
 
         return new ResponseEntity(HttpStatus.CREATED);
     }
 
-    @PostMapping("/reunioes/{id}")
-    public ResponseEntity agendarReuniao(@PathVariable("id") Integer reuniaoID, @RequestBody HorarioDTO horarioDTO) {
-        reuniaoService.agendarHorario(reuniaoID, horarioDTO.horarioId());
+    @PutMapping("/reunioes/{id}")
+    public ResponseEntity agendarReuniao(@RequestHeader("Authorization") String token, @PathVariable("id") Integer reuniaoID, @RequestBody HorarioDTO horarioDTO) {
+        reuniaoService.agendarHorario(reuniaoID, horarioDTO.horarioId(), token);
 
-        return new ResponseEntity(HttpStatus.OK);
+        return new ResponseEntity(HttpStatus.NO_CONTENT);
     }
 }

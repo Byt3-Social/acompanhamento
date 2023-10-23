@@ -1,6 +1,7 @@
 package com.byt3social.acompanhamento.services;
 
 import com.byt3social.acompanhamento.dto.AcompanhamentoDTO;
+import com.byt3social.acompanhamento.dto.IndicadorSolicitadoDTO;
 import com.byt3social.acompanhamento.models.Acompanhamento;
 import com.byt3social.acompanhamento.models.Arquivo;
 import com.byt3social.acompanhamento.models.Indicador;
@@ -11,13 +12,13 @@ import com.byt3social.acompanhamento.repositories.IndicadorRepository;
 import com.byt3social.acompanhamento.repositories.IndicadorSolicitadoRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.ListIterator;
 
 @Service
 public class AcompanhamentoService {
@@ -33,7 +34,7 @@ public class AcompanhamentoService {
     private ArquivoRepository arquivoRepository;
 
     public List<Acompanhamento> consultarAcompanhamentos() {
-        return acompanhamentoRepository.findAll();
+        return acompanhamentoRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"));
     }
 
     public Acompanhamento consultarAcompanhamento(Integer acompanhamentoID) {
@@ -47,8 +48,8 @@ public class AcompanhamentoService {
         List<IndicadorSolicitado> indicadoresSolicitados = new ArrayList<>();
         Indicador indicador;
 
-        if(acompanhamentoDTO.indicadoresSolicitados() != null) {
-            for(Integer indicadorSolicitadoDTO : acompanhamentoDTO.indicadoresSolicitados()) {
+        if(acompanhamentoDTO.novosIndicadoresSolicitados() != null) {
+            for(Integer indicadorSolicitadoDTO : acompanhamentoDTO.novosIndicadoresSolicitados()) {
                 indicador = indicadorRepository.findById(indicadorSolicitadoDTO).get();
                 indicadoresSolicitados.add(new IndicadorSolicitado(indicador, acompanhamento));
             }
@@ -62,31 +63,15 @@ public class AcompanhamentoService {
     @Transactional
     public void atualizarAcompanhamento(Integer acompanhamentoID, AcompanhamentoDTO acompanhamentoDTO) {
         Acompanhamento acompanhamento = acompanhamentoRepository.findById(acompanhamentoID).get();
-        ListIterator<IndicadorSolicitado> indicadorSolicitadoListIterator = acompanhamento.getIndicadoresSolicitados().listIterator();
+
+        acompanhamento.atualizar(acompanhamentoDTO);
 
         if(acompanhamentoDTO.indicadoresSolicitados() != null) {
-            while(indicadorSolicitadoListIterator.hasNext()) {
-                IndicadorSolicitado indicadorSolicitado = indicadorSolicitadoListIterator.next();
+            for(IndicadorSolicitadoDTO indicadorSolicitadoDTO : acompanhamentoDTO.indicadoresSolicitados()) {
+                IndicadorSolicitado indicadorSolicitado = indicadorSolicitadoRepository.findById(indicadorSolicitadoDTO.id()).get();
 
-                Boolean existeIndicadorSolicitado = acompanhamentoDTO.indicadoresSolicitados().contains(indicadorSolicitado.getIndicador().getId());
-
-                if(!existeIndicadorSolicitado) {
-                    indicadorSolicitadoListIterator.remove();
-                }
+                indicadorSolicitado.atualizar(indicadorSolicitadoDTO);
             }
-
-            for(Integer indicadorID : acompanhamentoDTO.indicadoresSolicitados()) {
-                Boolean existeIndicadorSolicitado = acompanhamento.getIndicadoresSolicitados().stream().anyMatch(indicadorSolicitado -> indicadorSolicitado.getIndicador().getId().equals(indicadorID));
-
-                if(!existeIndicadorSolicitado) {
-                    Indicador indicador = indicadorRepository.findById(indicadorID).get();
-                    IndicadorSolicitado indicadorSolicitado = new IndicadorSolicitado(indicador, acompanhamento);
-
-                    indicadorSolicitadoListIterator.add(indicadorSolicitado);
-                }
-            }
-
-            indicadorSolicitadoRepository.saveAll(acompanhamento.getIndicadoresSolicitados());
         }
     }
 
@@ -95,7 +80,7 @@ public class AcompanhamentoService {
     }
 
     @Transactional
-    public void salvarArquivoAcompanhamento(Integer acompanhamentoID, MultipartFile arquivo) {
+    public Arquivo salvarArquivoAcompanhamento(Integer acompanhamentoID, MultipartFile arquivo) {
         Acompanhamento acompanhamento = acompanhamentoRepository.findById(acompanhamentoID).get();
         String nomeArquivo = arquivo.getOriginalFilename();
         Long tamanhoArquivo = arquivo.getSize();
@@ -110,6 +95,8 @@ public class AcompanhamentoService {
 
         Arquivo novoArquivo = new Arquivo(caminhoArquivo, nomeArquivo, tamanhoArquivo, acompanhamento);
         arquivoRepository.save(novoArquivo);
+
+        return novoArquivo;
     }
 
     public String recuperarArquivoAcompanhamento(Integer arquivoID) {
@@ -124,5 +111,11 @@ public class AcompanhamentoService {
         Arquivo arquivo = arquivoRepository.findById(arquivoID).get();
         amazonS3Service.excluirArquivo(arquivo.getCaminhoS3());
         arquivoRepository.deleteById(arquivoID);
+    }
+
+    public List<Acompanhamento> buscarAcompanhamentos(Integer organizacaoId) {
+        List<Acompanhamento> acompanhamentos = acompanhamentoRepository.findByOrganizacaoId(organizacaoId);
+
+        return acompanhamentos;
     }
 }

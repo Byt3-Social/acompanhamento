@@ -2,6 +2,7 @@ package com.byt3social.acompanhamento.services;
 
 import com.byt3social.acompanhamento.dto.OrganizacaoDTO;
 import com.byt3social.acompanhamento.exceptions.FailedToDeliverEmailException;
+import com.byt3social.acompanhamento.models.Horario;
 import com.byt3social.acompanhamento.models.Reuniao;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
@@ -53,7 +54,8 @@ public class EmailService {
 
         Locale locale = new Locale.Builder().setLanguage("pt").setRegion("BR").build();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, dd 'de' MMMM 'de' yyyy 'às' HH:mm").withLocale(locale);
-        LocalDateTime localDate = reuniao.getHorario().getDataHorario().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+        Horario horario = reuniao.getHorarios().stream().filter(Horario::getEscolhido).findFirst().get();
+        LocalDateTime localDate = horario.getDataHorario().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
         String dataHorarioReuniao = localDate.format(formatter);
 
         try {

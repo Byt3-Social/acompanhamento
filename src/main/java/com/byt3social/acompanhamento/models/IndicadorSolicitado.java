@@ -1,17 +1,16 @@
 package com.byt3social.acompanhamento.models;
 
+import com.byt3social.acompanhamento.dto.IndicadorSolicitadoDTO;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 @Table(name = "indicadores_solicitados")
 @Entity(name = "IndicadorSolicitado")
 @EqualsAndHashCode(of = "id")
 @NoArgsConstructor
+@AllArgsConstructor
 @Getter
 @Setter
 public class IndicadorSolicitado {
@@ -28,13 +27,12 @@ public class IndicadorSolicitado {
     @JsonBackReference
     private Acompanhamento acompanhamento;
 
-
     public IndicadorSolicitado(Indicador indicador, Acompanhamento acompanhamento) {
         this.indicador = indicador;
         this.acompanhamento = acompanhamento;
     }
-//
-//    public void atualizar(Indicador indicador) {
-//        this.indicador = indicador;
-//    }
+
+    public void atualizar(IndicadorSolicitadoDTO indicadorSolicitadoDTO) {
+        this.valor = indicadorSolicitadoDTO.valor();
+    }
 }
