@@ -1,6 +1,5 @@
 package com.byt3social.acompanhamento.controllers;
 
-import com.byt3social.acompanhamento.controllers.AcompanhamentoController;
 import com.byt3social.acompanhamento.dto.AcompanhamentoDTO;
 import com.byt3social.acompanhamento.dto.RepresentanteDTO;
 import com.byt3social.acompanhamento.models.Acompanhamento;
@@ -33,7 +32,7 @@ public class AcompanhamentoControllerTest {
     private AcompanhamentoService acompanhamentoService;
 
     @BeforeEach
-    void setUp() {
+    void setUp() {  
         MockitoAnnotations.openMocks(this);
     }
 

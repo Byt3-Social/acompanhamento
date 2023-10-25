@@ -7,7 +7,6 @@ import com.byt3social.acompanhamento.dto.AcompanhamentoDTO;
 import com.byt3social.acompanhamento.dto.OnlineMeetingDTO;
 import com.byt3social.acompanhamento.dto.RepresentanteDTO;
 import com.byt3social.acompanhamento.enums.StatusReuniao;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
