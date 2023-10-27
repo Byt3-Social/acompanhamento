@@ -29,7 +29,7 @@ import java.util.*;
 public class ReuniaoService {
     @Value("${authentication.microsoft.entra-id.profile.tenant-id}")
     private String tenantId;
-    @Value("${authentication.microsoft.entra-id.credentials.client-id}")
+    @Value("${authentication.microsoft.entra-id.credentials.teams-client-id}")
     private String clientId;
     @Value("${authentication.microsoft.entra-id.credentials.client-secret}")
     private String clientSecret;
