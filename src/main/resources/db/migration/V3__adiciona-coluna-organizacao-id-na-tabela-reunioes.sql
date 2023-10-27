@@ -1,0 +1,1 @@
+ALTER TABLE reunioes ADD COLUMN organizacao_id INT UNSIGNED NULL;
